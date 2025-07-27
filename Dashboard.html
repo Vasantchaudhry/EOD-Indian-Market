@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>End-of-Day Market Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --positive: #0a9c4e;
+            --negative: #d9534f;
+            --neutral: #6c757d;
+        }
+        body {
+            background-color: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding-top: 15px;
+            padding-bottom: 30px;
+        }
+        .dashboard-header {
+            background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+            color: white;
+            padding: 15px 0;
+            margin-bottom: 20px;
+            border-radius: 12px;
+        }
+        .market-status {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+            background: {{ '#0a9c4e' if market_status == 'Open' else '#d9534f' }};
+        }
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            border: none;
+        }
+        .card-title {
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        .positive {
+            color: var(--positive);
+        }
+        .negative {
+            color: var(--negative);
+        }
+        .index-card {
+            border-top: 4px solid #3498db;
+        }
+        .sentiment-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .bullish {
+            background-color: rgba(10, 156, 78, 0.15);
+            color: var(--positive);
+        }
+        .bearish {
+            background-color: rgba(217, 83, 79, 0.15);
+            color: var(--negative);
+        }
+        .neutral-bg {
+            background-color: rgba(108, 117, 125, 0.15);
+            color: var(--neutral);
+        }
+        .update-info {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+        .company-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #eef2f7;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .result-date {
+            background-color: #e8f4ff;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+        }
+        .eod-banner {
+            background-color: #fff8e6;
+            border-left: 4px solid #ffc107;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+        }
+        @media (max-width: 768px) {
+            .card-title {
+                font-size: 1rem;
+            }
+            h2 {
+                font-size: 1.5rem;
+            }
+            .dashboard-header h1 {
+                font-size: 1.6rem;
+            }
+            .market-status {
+                position: static;
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="dashboard-header position-relative">
+            <div class="text-center">
+                <h1><i class="fas fa-chart-line"></i> EOD Market Dashboard</h1>
+                <p class="mb-0">Today's Closing Snapshot</p>
+                <div class="market-status">
+                    Market: {{ market_status }}
+                </div>
+            </div>
+        </div>
+        
+        <div class="eod-banner">
+            <i class="fas fa-info-circle me-2"></i>
+            End-of-Day data as of {{ updated_at }} IST
+        </div>
+
+        <!-- Main Indices -->
+        <div class="row">
+            <div class="col-lg-6 mb-3">
+                <div class="card index-card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Nifty 50</h5>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h2 class="{{ 'positive' if nifty50.change_pct >= 0 else 'negative' }}">
+                                {{ nifty50.price }}
+                            </h2>
+                            <span class="{{ 'positive' if nifty50.change_pct >= 0 else 'negative' }}">
+                                <i class="fas {{ 'fa-arrow-up' if nifty50.change_pct >= 0 else 'fa-arrow-down' }}"></i>
+                                {{ nifty50.change|abs }} ({{ nifty50.change_pct|abs }}%)
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 mb-3">
+                <div class="card index-card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Bank Nifty</h5>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h2 class="{{ 'positive' if banknifty.change_pct >= 0 else 'negative' }}">
+                                {{ banknifty.price }}
+                            </h2>
+                            <span class="{{ 'positive' if banknifty.change_pct >= 0 else 'negative' }}">
+                                <i class="fas {{ 'fa-arrow-up' if banknifty.change_pct >= 0 else 'fa-arrow-down' }}"></i>
+                                {{ banknifty.change|abs }} ({{ banknifty.change_pct|abs }}%)
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Market Indicators -->
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Market Sentiment (PCR)</h5>
+                        <div class="d-flex align-items-center">
+                            <h2 class="{{ 'positive' if pcr.sentiment == 'Bearish' else 'negative' if pcr.sentiment == 'Bullish' else 'neutral' }}">
+                                {{ pcr.value|round(2) }}
+                            </h2>
+                            <span class="sentiment-badge ms-3 {{ 'bullish' if pcr.sentiment == 'Bearish' else 'bearish' if pcr.sentiment == 'Bullish' else 'neutral-bg' }}">
+                                {{ pcr.sentiment }}
+                            </span>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                {% if pcr.sentiment == "Bearish" %}
+                                <i class="fas fa-info-circle"></i> Bearish sentiment (PCR &gt; 1.2)
+                                {% elif pcr.sentiment == "Bullish" %}
+                                <i class="fas fa-info-circle"></i> Bullish sentiment (PCR &lt; 0.8)
+                                {% else %}
+                                <i class="fas fa-info-circle"></i> Neutral market sentiment
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Nifty 50 P/E Ratio</h5>
+                        <h2>{{ pe_ratio }}</h2>
+                        <div class="mt-2">
+                            {% if pe_ratio > 25 %}
+                            <span class="badge bg-danger">Expensive</span>
+                            <small class="text-muted d-block mt-1"><i class="fas fa-info-circle"></i> Historical avg: 20-25</small>
+                            {% elif pe_ratio < 20 %}
+                            <span class="badge bg-success">Cheap</span>
+                            <small class="text-muted d-block mt-1"><i class="fas fa-info-circle"></i> Historical avg: 20-25</small>
+                            {% else %}
+                            <span class="badge bg-primary">Fair Value</span>
+                            <small class="text-muted d-block mt-1"><i class="fas fa-info-circle"></i> Near historical average</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">India VIX</h5>
+                        <h2 class="{{ 'positive' if vix.change < 0 else 'negative' }}">
+                            {{ vix.price }}
+                            <small class="fs-6 {{ 'positive' if vix.change < 0 else 'negative' }}">
+                                ({{ vix.change }})
+                            </small>
+                        </h2>
+                        <div class="mt-2">
+                            {% if vix.price > 25 %}
+                            <span class="badge bg-danger">High Volatility</span>
+                            <small class="text-muted d-block mt-1"><i class="fas fa-info-circle"></i> Expect large swings</small>
+                            {% elif vix.price < 15 %}
+                            <span class="badge bg-success">Low Volatility</span>
+                            <small class="text-muted d-block mt-1"><i class="fas fa-info-circle"></i> Market expects stability</small>
+                            {% else %}
+                            <span class="badge bg-primary">Normal Volatility</span>
+                            <small class="text-muted d-block mt-1"><i class="fas fa-info-circle"></i> Typical market conditions</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Other Indices -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Sector Performance</h5>
+                        <div class="row">
+                            {% for index in other_indices %}
+                            <div class="col-md-3 col-6 mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <span class="fw-500">{{ index.name }}</span>
+                                    <span class="{{ 'positive' if index.change_pct >= 0 else 'negative' }}">
+                                        {{ index.change_pct|abs }}%
+                                    </span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">Price</small>
+                                    <span>{{ index.price }}</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Movers -->
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title text-success">Top Gainers <i class="fas fa-arrow-up"></i></h5>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <tbody>
+                                    {% for stock in gainers %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="company-badge">
+                                                    {{ stock.symbol|slice:":2" }}
+                                                </div>
+                                                <div>
+                                                    <div class="fw-500">{{ stock.symbol }}</div>
+                                                    <small class="text-muted">{{ stock.ltp }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-success fw-500 text-end">+{{ stock.percentChange }}%</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title text-danger">Top Losers <i class="fas fa-arrow-down"></i></h5>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <tbody>
+                                    {% for stock in losers %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="company-badge">
+                                                    {{ stock.symbol|slice:":2" }}
+                                                </div>
+                                                <div>
+                                                    <div class="fw-500">{{ stock.symbol }}</div>
+                                                    <small class="text-muted">{{ stock.ltp }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-danger fw-500 text-end">{{ stock.percentChange }}%</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Results -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Upcoming Results</h5>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <tbody>
+                                    {% for result in results %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="company-badge">
+                                                    {{ result.company|slice:":2" }}
+                                                </div>
+                                                <div class="fw-500">{{ result.company }}</div>
+                                            </div>
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="result-date">{{ result.date }}</span>
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="2" class="text-center py-4">
+                                            <i class="fas fa-calendar-check me-2"></i>
+                                            No results scheduled for today
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="row mt-4">
+            <div class="col-12 text-center text-muted small">
+                <p>End-of-Day Data • Updated at Market Close</p>
+                <p>Disclaimer: For informational purposes only. Consult a SEBI-registered advisor before investing.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
